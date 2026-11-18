@@ -1,0 +1,76 @@
+{
+  "version": "1.0.0",
+  "name": "minimal",
+  "description": "极简预设，仅核心插件与基础 UI",
+  "plugins": [
+    {
+      "id": "dsh-free-search",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-free-search",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-mnemon",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-mnemon",
+      "branch": "main"
+    }
+  ],
+  "modelProfiles": [
+    {
+      "id": "ollama-local",
+      "name": "Ollama 本地",
+      "provider": "ollama",
+      "baseUrl": "http://localhost:11434/v1",
+      "apiKeyRef": "DSH_SECRET_OLLAMA_KEY",
+      "models": [
+        { "id": "qwen2.5:7b", "name": "Qwen 2.5 7B", "contextLength": 32768, "supportsTools": true }
+      ],
+      "defaultModel": "qwen2.5:7b"
+    }
+  ],
+  "ui": {
+    "topBar": {
+      "visible": true,
+      "buttons": ["new-chat", "model-selector", "menu"]
+    },
+    "capsules": [
+      { "id": "summarize", "label": "总结对话", "action": "summarize_session", "icon": "IconText" },
+      { "id": "save-note", "label": "存入笔记", "action": "save_to_notes", "icon": "IconPlusCircle" }
+    ],
+    "theme": "system",
+    "accentColor": "#009688",
+    "density": "comfortable",
+    "drawer": {
+      "groups": ["recent", "settings"],
+      "sortBy": "updated"
+    },
+    "hiddenElements": ["footer-version", "chat-watermark", "plugin-panel"],
+    "tabletShortcuts": {
+      "Ctrl+N": "new_chat",
+      "Ctrl+/": "toggle_drawer"
+    },
+    "pluginSeats": {
+      "search": "dsh-free-search",
+      "memory": "dsh-mnemon"
+    }
+  },
+  "automations": [
+    {
+      "id": "cleanup-cache",
+      "name": "定时清理缓存",
+      "trigger": "cron",
+      "cronExpression": "0 3 * * 0",
+      "action": "builtin:cleanup_cache",
+      "enabled": true
+    }
+  ],
+  "hooks": {
+    "preInstall": ["echo '安装极简预设...'"],
+    "postInstall": ["echo '极简预设安装完成'"],
+    "preReload": [],
+    "postReload": []
+  }
+}

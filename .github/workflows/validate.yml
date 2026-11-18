@@ -1,0 +1,171 @@
+name: Validate Presets & Scripts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  json-lint:
+    name: JSON Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check preset JSON syntax
+        run: |
+          for f in presets/*.json; do
+            echo "Checking $f..."
+            jq empty "$f" || { echo "❌ Invalid JSON: $f"; exit 1; }
+          done
+          echo "✅ All preset JSON files are valid"
+
+      - name: Check schema JSON syntax
+        run: |
+          jq empty schema/preset.schema.json
+          echo "✅ Schema JSON is valid"
+
+  schema-validate:
+    name: Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli
+
+      - name: Validate presets against schema
+        run: |
+          for f in presets/*.json; do
+            echo "Validating $f against schema..."
+            ajv validate -s schema/preset.schema.json -d "$f" --strict=false || {
+              echo "❌ Schema validation failed: $f"
+              exit 1
+            }
+          done
+          echo "✅ All presets pass schema validation"
+
+  script-lint:
+    name: Script Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          for f in scripts/*.sh; do
+            echo "Linting $f..."
+            shellcheck "$f" || { echo "❌ shellcheck failed: $f"; exit 1; }
+          done
+          echo "✅ All shell scripts pass shellcheck"
+
+      - name: Install PowerShell & PSScriptAnalyzer
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y powershell
+          pwsh -Command "Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser"
+
+      - name: Lint PowerShell scripts
+        if: runner.os == 'Linux'
+        run: |
+          for f in scripts/*.ps1; do
+            [[ -f "$f" ]] || continue
+            echo "Linting $f..."
+            pwsh -Command "Invoke-ScriptAnalyzer -Path '$f' -Severity Error" || {
+              echo "❌ PSScriptAnalyzer failed: $f"
+              exit 1
+            }
+          done
+          echo "✅ All PowerShell scripts pass PSScriptAnalyzer"
+
+  install-dry-run:
+    name: Install Dry Run
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        preset: [default, minimal, dev]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl git jq
+
+      - name: Run install.sh --dry-run
+        run: |
+          export DSH_HOME="/tmp/dsh-test"
+          mkdir -p "$DSH_HOME"
+          bash scripts/install.sh --preset ${{ matrix.preset }} --dry-run --yes
+          echo "✅ Dry run passed for ${{ matrix.preset }}"
+
+  docs-check:
+    name: Documentation Sync Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PRESETS.md exists
+        run: |
+          [[ -f docs/PRESETS.md ]] || { echo "❌ docs/PRESETS.md missing"; exit 1; }
+          echo "✅ docs/PRESETS.md exists"
+
+      - name: Check SCREENSHOTS dir exists
+        run: |
+          [[ -d docs/SCREENSHOTS ]] || { echo "❌ docs/SCREENSHOTS dir missing"; exit 1; }
+          echo "✅ docs/SCREENSHOTS exists"
+
+      - name: Check README.md exists
+        run: |
+          [[ -f README.md ]] || { echo "❌ README.md missing"; exit 1; }
+          echo "✅ README.md exists"
+
+  release:
+    name: Create Release
+    needs: [json-lint, schema-validate, script-lint, install-dry-run, docs-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate version tag
+        id: version
+        run: |
+          # 从 package.json 或手动指定版本
+          VERSION=$(date +"%Y.%m.%d")
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Release ${{ steps.version.outputs.tag }}"
+          body: |
+            ## dshgo-config-preset ${{ steps.version.outputs.tag }}
+
+            ### 预设更新
+            - default: 全量预设（常用插件、模型接口、UI、自动化）
+            - minimal: 极简预设（仅核心插件）
+            - dev: 开发者预设（含调试工具）
+
+            ### 一键安装
+            \`\`\`bash
+            curl -fsSL https://raw.githubusercontent.com/i-am-cie/dshgo-config-preset/main/scripts/install.sh | bash
+            \`\`\`
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

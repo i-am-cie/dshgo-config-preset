@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "dshgo-config-preset Schema",
+  "type": "object",
+  "required": ["version", "name", "plugins", "modelProfiles", "ui", "automations", "hooks"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "语义化版本号"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "预设名称标识"
+    },
+    "description": {
+      "type": "string",
+      "description": "预设描述"
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "enabled", "source"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" },
+          "config": { "type": "object" },
+          "source": { "type": "string", "enum": ["local", "github", "npm"] },
+          "repo": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+          "branch": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "modelProfiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "provider", "models", "defaultModel"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "provider": { "type": "string", "enum": ["openai", "ollama", "openai-compat", "anthropic", "google", "deepseek"] },
+          "baseUrl": { "type": "string", "format": "uri" },
+          "apiKeyRef": { "type": "string", "pattern": "^DSH_SECRET_[A-Z0-9_]+$" },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "contextLength", "supportsTools"],
+              "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "contextLength": { "type": "integer", "minimum": 1 },
+                "supportsTools": { "type": "boolean" }
+              }
+            },
+            "minItems": 1
+          },
+          "defaultModel": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "topBar": {
+          "type": "object",
+          "properties": {
+            "visible": { "type": "boolean" },
+            "buttons": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "capsules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "action"],
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "action": { "type": "string" },
+              "icon": { "type": "string" }
+            }
+          }
+        },
+        "theme": { "type": "string", "enum": ["light", "dark", "system", "custom"] },
+        "accentColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "density": { "type": "string", "enum": ["compact", "comfortable", "spacious"] },
+        "drawer": {
+          "type": "object",
+          "properties": {
+            "groups": { "type": "array", "items": { "type": "string" } },
+            "sortBy": { "type": "string", "enum": ["name", "created", "updated"] }
+          }
+        },
+        "hiddenElements": { "type": "array", "items": { "type": "string" } },
+        "tabletShortcuts": { "type": "object", "additionalProperties": { "type": "string" } },
+        "pluginSeats": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "automations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "trigger", "action", "enabled"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "trigger": { "type": "string", "enum": ["cron", "event", "manual"] },
+          "cronExpression": { "type": "string" },
+          "event": { "type": "string" },
+          "action": { "type": "string" },
+          "enabled": { "type": "boolean" }
+        },
+        "allOf": [
+          { "if": { "properties": { "trigger": { "const": "cron" } } }, "then": { "required": ["cronExpression"] } },
+          { "if": { "properties": { "trigger": { "const": "event" } } }, "then": { "required": ["event"] } }
+        ],
+        "additionalProperties": true
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "preInstall": { "type": "array", "items": { "type": "string" } },
+        "postInstall": { "type": "array", "items": { "type": "string" } },
+        "preReload": { "type": "array", "items": { "type": "string" } },
+        "postReload": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

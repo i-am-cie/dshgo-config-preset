@@ -1,0 +1,202 @@
+{
+  "version": "1.0.0",
+  "name": "dev",
+  "description": "开发者预设，含调试工具、开发插件、完整 UI",
+  "plugins": [
+    {
+      "id": "dsh-free-search",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-free-search",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-image-gen",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-image-gen",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-mnemon",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-mnemon",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-go-plugin",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-go-plugin",
+      "branch": "main"
+    },
+    {
+      "id": "cc-safety-net",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/cc-safety-net",
+      "branch": "main"
+    },
+    {
+      "id": "billion-context",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/billion-context",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-go-support",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-go-support",
+      "branch": "main"
+    },
+    {
+      "id": "dsh-go-ui",
+      "enabled": true,
+      "source": "github",
+      "repo": "dsh-plugins/dsh-go-ui",
+      "branch": "main"
+    }
+  ],
+  "modelProfiles": [
+    {
+      "id": "openai-official",
+      "name": "OpenAI 官方",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKeyRef": "DSH_SECRET_OPENAI_KEY",
+      "models": [
+        { "id": "gpt-4o", "name": "GPT-4o", "contextLength": 128000, "supportsTools": true },
+        { "id": "gpt-4o-mini", "name": "GPT-4o Mini", "contextLength": 128000, "supportsTools": true }
+      ],
+      "defaultModel": "gpt-4o-mini"
+    },
+    {
+      "id": "ollama-local",
+      "name": "Ollama 本地",
+      "provider": "ollama",
+      "baseUrl": "http://localhost:11434/v1",
+      "apiKeyRef": "DSH_SECRET_OLLAMA_KEY",
+      "models": [
+        { "id": "llama3.1:8b", "name": "Llama 3.1 8B", "contextLength": 131072, "supportsTools": true },
+        { "id": "qwen2.5:7b", "name": "Qwen 2.5 7B", "contextLength": 32768, "supportsTools": true },
+        { "id": "deepseek-coder:6.7b", "name": "DeepSeek Coder 6.7B", "contextLength": 16384, "supportsTools": true }
+      ],
+      "defaultModel": "deepseek-coder:6.7b"
+    },
+    {
+      "id": "deepseek-official",
+      "name": "DeepSeek 官方",
+      "provider": "deepseek",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "apiKeyRef": "DSH_SECRET_DEEPSEEK_KEY",
+      "models": [
+        { "id": "deepseek-chat", "name": "DeepSeek V3", "contextLength": 65536, "supportsTools": true },
+        { "id": "deepseek-reasoner", "name": "DeepSeek R1", "contextLength": 65536, "supportsTools": false }
+      ],
+      "defaultModel": "deepseek-chat"
+    },
+    {
+      "id": "openai-compat",
+      "name": "通用 OpenAI 兼容层",
+      "provider": "openai-compat",
+      "baseUrl": "https://api.example.com/v1",
+      "apiKeyRef": "DSH_SECRET_COMPAT_KEY",
+      "models": [
+        { "id": "model-1", "name": "模型 1", "contextLength": 32768, "supportsTools": true }
+      ],
+      "defaultModel": "model-1"
+    }
+  ],
+  "ui": {
+    "topBar": {
+      "visible": true,
+      "buttons": ["new-chat", "search", "model-selector", "terminal", "plugins", "settings", "menu"]
+    },
+    "capsules": [
+      { "id": "summarize", "label": "总结对话", "action": "summarize_session", "icon": "IconText" },
+      { "id": "translate", "label": "翻译选中", "action": "translate_selection", "icon": "IconWorld" },
+      { "id": "code-explain", "label": "解释代码", "action": "explain_code", "icon": "IconCode" },
+      { "id": "save-note", "label": "存入笔记", "action": "save_to_notes", "icon": "IconPlusCircle" },
+      { "id": "read-aloud", "label": "朗读回复", "action": "speak_last_reply", "icon": "IconVolume" },
+      { "id": "debug-info", "label": "调试信息", "action": "show_debug_info", "icon": "IconBug" },
+      { "id": "reload-plugins", "label": "重载插件", "action": "reload_plugins", "icon": "IconRefresh" },
+      { "id": "open-terminal", "label": "打开终端", "action": "open_terminal", "icon": "IconTerminal" }
+    ],
+    "theme": "dark",
+    "accentColor": "#6366F1",
+    "density": "compact",
+    "drawer": {
+      "groups": ["recent", "pinned", "projects", "agents", "plugins", "tools", "settings"],
+      "sortBy": "name"
+    },
+    "hiddenElements": ["footer-version"],
+    "tabletShortcuts": {
+      "Ctrl+K": "focus_search",
+      "Ctrl+N": "new_chat",
+      "Ctrl+/": "toggle_drawer",
+      "Ctrl+Shift+P": "command_palette",
+      "Ctrl+T": "open_terminal",
+      "Ctrl+Shift+R": "reload_plugins",
+      "F12": "toggle_dev_tools"
+    },
+    "pluginSeats": {
+      "search": "dsh-free-search",
+      "image": "dsh-image-gen",
+      "memory": "dsh-mnemon",
+      "tools": "dsh-go-plugin",
+      "support": "dsh-go-support",
+      "ui": "dsh-go-ui"
+    }
+  },
+  "automations": [
+    {
+      "id": "daily-brief",
+      "name": "每日早报",
+      "trigger": "cron",
+      "cronExpression": "0 8 * * *",
+      "action": "builtin:daily_brief",
+      "enabled": true
+    },
+    {
+      "id": "auto-summarize",
+      "name": "会话自动摘要",
+      "trigger": "event",
+      "event": "session_end",
+      "action": "builtin:summarize_session",
+      "enabled": true
+    },
+    {
+      "id": "cleanup-cache",
+      "name": "定时清理缓存",
+      "trigger": "cron",
+      "cronExpression": "0 3 * * 0",
+      "action": "builtin:cleanup_cache",
+      "enabled": true
+    },
+    {
+      "id": "git-pull",
+      "name": "Git 仓库自动拉取",
+      "trigger": "cron",
+      "cronExpression": "0 */6 * * *",
+      "action": "script:git_auto_pull.sh",
+      "enabled": true
+    },
+    {
+      "id": "plugin-update-check",
+      "name": "插件更新检查",
+      "trigger": "cron",
+      "cronExpression": "0 2 * * *",
+      "action": "builtin:check_plugin_updates",
+      "enabled": true
+    }
+  ],
+  "hooks": {
+    "preInstall": ["echo '安装开发者预设...'"],
+    "postInstall": ["echo '开发者预设安装完成，包含完整调试工具链'"],
+    "preReload": ["dsh-go-cli save-state", "dsh-go-cli backup-plugins"],
+    "postReload": ["dsh-go-cli notify '开发者环境就绪'"]
+  }
+}
