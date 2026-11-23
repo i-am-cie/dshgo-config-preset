@@ -11,6 +11,9 @@ REPO_NAME="dshgo-config-preset"
 REPO_BRANCH="main"
 RAW_BASE="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}"
 
+# 脚本所在目录（dry-run 时从本地仓库读取预设，避免依赖网络下载）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 预设文件映射
 declare -A PRESET_FILES=(
   ["default"]="presets/default.json"
@@ -169,16 +172,24 @@ check_dependencies() {
 # ==================== 下载预设 ====================
 fetch_preset() {
   local url="${RAW_BASE}/${PRESET_FILE}"
-  log_step "下载预设: $url"
+  local local_file="${SCRIPT_DIR}/../${PRESET_FILE}"
 
   if $DRY_RUN; then
-    log_info "[DRY-RUN] 跳过下载"
-    return 0
-  fi
-
-  if ! PRESET_JSON=$(curl -fsSL "$url"); then
-    log_error "下载预设失败: $url"
-    exit 1
+    # dry-run 不访问网络：优先读取本地仓库中的预设文件，保证下游步骤可解析
+    if [[ -f "$local_file" ]]; then
+      log_step "[DRY-RUN] 读取本地预设: $local_file"
+      PRESET_JSON="$(cat "$local_file")"
+    else
+      log_error "dry-run 需要本地仓库副本，但未找到: $local_file"
+      log_error "请先 git clone 本仓库，或去掉 --dry-run 后联网下载"
+      exit 1
+    fi
+  else
+    log_step "下载预设: $url"
+    if ! PRESET_JSON=$(curl -fsSL "$url"); then
+      log_error "下载预设失败: $url"
+      exit 1
+    fi
   fi
 
   # 校验 JSON 语法
@@ -187,7 +198,7 @@ fetch_preset() {
     exit 1
   fi
 
-  log_ok "预设下载并校验通过"
+  log_ok "预设读取并校验通过"
 }
 
 # ==================== 交互式确认 ====================
@@ -508,12 +519,14 @@ main() {
   detect_dsh_home
   check_dependencies
   fetch_preset
+  run_hooks "preInstall"
   confirm_install
   backup_config
   merge_ui_config
   install_plugins
   write_model_config
   register_automations
+  run_hooks "postInstall"
   run_hooks "preReload"
   reload_dsh_go
   run_hooks "postReload"

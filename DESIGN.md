@@ -15,20 +15,20 @@ dshgo-config-preset/
 │   └── dev.json              # 开发者预设（含调试工具）
 ├── scripts/
 │   ├── install.sh            # 一键安装脚本（Linux/macOS/Termux）
-│   ├── install.ps1           # Windows PowerShell 安装脚本
-│   └── utils.sh              # 共享工具函数
+│   └── install.ps1           # Windows PowerShell 安装脚本
+├── tests/
+│   └── preset.test.js        # 预设跨字段一致性单元测试（node:test，零依赖）
 ├── docs/
 │   ├── PRESETS.md            # 预设字段说明
 │   ├── USAGE.md              # 使用指南
-│   └── SCREENSHOTS/          # 效果截图
+│   └── SCREENSHOTS/          # 效果截图（含占位说明）
 ├── .github/
 │   └── workflows/
-│       └── validate.yml      # CI 校验：JSON 语法、Schema 校验、脚本语法
+│       └── validate.yml      # CI 校验：JSON 语法、Schema 校验、单元测试、脚本语法
 ├── schema/
 │   └── preset.schema.json    # 预设 JSON Schema
 ├── README.md
-├── LICENSE
-└── package.json              # 仅用于脚本依赖管理（如有）
+└── LICENSE
 ```
 
 ---

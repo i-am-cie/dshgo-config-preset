@@ -15,7 +15,7 @@
 - **模型接口预置**：OpenAI、Ollama、DeepSeek、通用兼容层
 - **UI 配置预设**：胶囊、主题、顶栏、抽屉、快捷键、插件座位
 - **自动化任务**：每日早报、会话摘要、缓存清理、Git 拉取
-- **CI 校验**：JSON 语法、Schema 校验、Shell/PowerShell Lint、安装干跑
+- **CI 校验**：JSON 语法、Schema 校验、预设一致性单元测试、Shell/PowerShell Lint、安装干跑
 - **自动发布**：推送到 main 自动打 Tag、生成 Release、更新安装脚本
 
 ---
@@ -73,14 +73,15 @@ dshgo-config-preset/
 │   └── dev.json        # 开发者预设
 ├── scripts/
 │   ├── install.sh      # Linux/macOS/Termux 安装脚本
-│   ├── install.ps1     # Windows PowerShell 安装脚本
-│   └── utils.sh        # 共享工具函数
+│   └── install.ps1     # Windows PowerShell 安装脚本
 ├── schema/
 │   └── preset.schema.json  # JSON Schema 校验
+├── tests/
+│   └── preset.test.js   # 预设跨字段一致性单元测试（node:test）
 ├── docs/
 │   ├── PRESETS.md      # 预设字段说明
 │   ├── USAGE.md        # 使用指南
-│   └── SCREENSHOTS/    # 效果截图
+│   └── SCREENSHOTS/    # 效果截图（含占位说明）
 ├── .github/workflows/
 │   └── validate.yml    # CI 校验流程
 ├── README.md
@@ -129,6 +130,9 @@ ajv validate -s schema/preset.schema.json -d presets/default.json
 # Shell 脚本检查
 shellcheck scripts/*.sh
 
+# 预设一致性单元测试（Node 20+，零依赖）
+node --test tests/preset.test.js
+
 # 干跑测试
 DSH_HOME=/tmp/dsh-test bash scripts/install.sh --preset default --dry-run --yes
 ```
@@ -136,8 +140,8 @@ DSH_HOME=/tmp/dsh-test bash scripts/install.sh --preset default --dry-run --yes
 ### 添加新预设
 
 1. 在 `presets/` 下创建 `xxx.json`（参考现有预设结构）
-2. 运行 Schema 校验确保格式正确
-3. 更新 `scripts/install.sh` 中的 `PRESET_FILES` 映射
+2. 运行 Schema 校验与单元测试确保格式、引用关系正确
+3. 更新 `scripts/install.sh` 与 `scripts/install.ps1` 中的预设映射
 4. 提交 PR，CI 自动验证
 
 ---

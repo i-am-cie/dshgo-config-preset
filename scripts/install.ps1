@@ -37,6 +37,7 @@ $REPO_OWNER = "i-am-cie"
 $REPO_NAME = "dshgo-config-preset"
 $REPO_BRANCH = "main"
 $RAW_BASE = "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/$REPO_BRANCH"
+$ScriptDir = $PSScriptRoot
 
 $PRESET_FILES = @{
     'default' = 'presets/default.json'
@@ -144,32 +145,43 @@ function Check-Dependencies {
 # ==================== 下载预设 ====================
 function Fetch-Preset {
     $url = "$RAW_BASE/$PRESET_FILE"
-    Write-Step "下载预设: $url"
+    $localFile = Join-Path $ScriptDir "..\$PRESET_FILE"
 
     if ($DryRun) {
-        Write-Info "[DRY-RUN] 跳过下载"
-        return
+        # dry-run 不访问网络：优先读取本地仓库中的预设文件，保证下游步骤可解析
+        if (Test-Path $localFile) {
+            Write-Step "[DRY-RUN] 读取本地预设: $localFile"
+            $global:PRESET_JSON = Get-Content $localFile -Raw
+        }
+        else {
+            Write-Error "dry-run 需要本地仓库副本，但未找到: $localFile"
+            Write-Error "请先 git clone 本仓库，或去掉 -DryRun 后联网下载"
+            exit 1
+        }
     }
-
-    try {
-        $global:PRESET_JSON = Invoke-RestMethod -Uri $url -Method Get -UseBasicParsing
-    }
-    catch {
-        Write-Error "下载预设失败: $url"
-        Write-Error $_.Exception.Message
-        exit 1
+    else {
+        Write-Step "下载预设: $url"
+        try {
+            $resp = Invoke-RestMethod -Uri $url -Method Get -UseBasicParsing
+            $global:PRESET_JSON = $resp | ConvertTo-Json -Depth 20
+        }
+        catch {
+            Write-Error "下载预设失败: $url"
+            Write-Error $_.Exception.Message
+            exit 1
+        }
     }
 
     # 校验 JSON 语法
     try {
-        $global:PRESET_JSON | ConvertFrom-Json | ConvertTo-Json | Out-Null
+        $global:PRESET_JSON | ConvertFrom-Json | Out-Null
     }
     catch {
         Write-Error "预设 JSON 语法错误"
         exit 1
     }
 
-    Write-Ok "预设下载并校验通过"
+    Write-Ok "预设读取并校验通过"
 }
 
 # ==================== 交互式确认 ====================
@@ -276,7 +288,7 @@ function Install-Plugins {
         Write-Info "安装插件: $id ($source)"
 
         if ($DryRun) {
-            Write-Info "[DRY-RUN] 将安装: $id from $source:$repo@$branch"
+            Write-Info "[DRY-RUN] 将安装: $id from ${source}:${repo}@${branch}"
             continue
         }
 
@@ -472,12 +484,14 @@ try {
     Detect-DshHome
     Check-Dependencies
     Fetch-Preset
+    Run-Hooks -Phase 'preInstall'
     Confirm-Install
     Backup-Config
     Merge-UiConfig
     Install-Plugins
     Write-ModelConfig
     Register-Automations
+    Run-Hooks -Phase 'postInstall'
     Run-Hooks -Phase 'preReload'
     Reload-DshGo
     Run-Hooks -Phase 'postReload'
