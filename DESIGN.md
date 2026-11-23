@@ -135,16 +135,18 @@ dshgo-config-preset/
 - 确认覆盖现有配置（备份原配置到 `.bak`）
 
 ### 3.3 执行步骤
-1. **备份原配置**：`cp -r "$DSH_HOME/dsh-go" "$DSH_HOME/dsh-go.bak.$(date +%s)"`
-2. **写入 ui.json**：合并预设 `ui` 字段到现有配置（深度合并，保留用户自定义）
-3. **安装插件**：
+1. **`preInstall` hooks**：预设加载后、改动现有配置前执行
+2. **备份原配置**：`cp -r "$DSH_HOME/dsh-go" "$DSH_HOME/dsh-go.bak.$(date +%s)"`
+3. **写入 ui.json**：合并预设 `ui` 字段到现有配置（深度合并，保留用户自定义）
+4. **安装插件**：
    - `source=github`：`dsh plugin --profile web add github:owner/repo[@branch]`
    - `source=local`：复制到 `$DSH_HOME/dsh-go/plugins/`
    - `source=npm`：`pnpm add -g pkg-name` 后注册
-4. **写入模型配置**：更新 `$DSH_HOME/dsh-go/engines.json` 或对应配置文件
-5. **注册自动化任务**：写入 `$DSH_HOME/dsh-go/automations.json`
-6. **执行 hooks**：运行 `preReload` → 重载 dsh-go → 运行 `postReload`
-7. **验证**：检查关键插件是否加载成功、模型连通性测试
+5. **写入模型配置**：更新 `$DSH_HOME/dsh-go/engines.json` 或对应配置文件
+6. **注册自动化任务**：写入 `$DSH_HOME/dsh-go/automations.json`
+7. **`postInstall` hooks**：所有配置写入后、重载前执行
+8. **重载 hooks**：运行 `preReload` → 重载 dsh-go → 运行 `postReload`
+9. **验证**：检查关键插件是否加载成功、模型连通性测试
 
 ### 3.4 错误处理与回滚
 - 任一步骤失败 → 打印错误 → 提供回滚命令：`mv "$DSH_HOME/dsh-go.bak.xxx" "$DSH_HOME/dsh-go"`
@@ -159,9 +161,10 @@ dshgo-config-preset/
 Jobs：
 1. **json-lint**：`jq empty` 校验所有 `presets/*.json` 语法
 2. **schema-validate**：使用 `ajv` 校验预设符合 `schema/preset.schema.json`
-3. **script-lint**：`shellcheck scripts/*.sh`、`pwsh -Command "Invoke-ScriptAnalyzer scripts/*.ps1"`
-4. **install-dry-run**：在容器中跑 `scripts/install.sh --dry-run --preset default`，验证不报错
-5. **docs-check**：确认 `docs/PRESETS.md` 与 `schema/` 同步
+3. **preset-tests**：`node --test tests/preset.test.js` 校验跨字段一致性（id 唯一、引用闭合、触发条件齐全）
+4. **script-lint**：`shellcheck scripts/*.sh`、`pwsh -Command "Invoke-ScriptAnalyzer scripts/*.ps1"`
+5. **install-dry-run**：在容器中跑 `scripts/install.sh --dry-run --preset default`，验证不报错
+6. **docs-check**：确认 `docs/PRESETS.md` 与 `schema/` 同步
 
 ---
 
