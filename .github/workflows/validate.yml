@@ -52,6 +52,20 @@ jobs:
           done
           echo "✅ All presets pass schema validation"
 
+  preset-tests:
+    name: Preset Consistency Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run preset unit tests
+        run: node --test tests/preset.test.js
+
   script-lint:
     name: Script Linting
     runs-on: ubuntu-latest
@@ -131,7 +145,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [json-lint, schema-validate, script-lint, install-dry-run, docs-check]
+    needs: [json-lint, schema-validate, preset-tests, script-lint, install-dry-run, docs-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -163,9 +177,9 @@ jobs:
             - dev: 开发者预设（含调试工具）
 
             ### 一键安装
-            \`\`\`bash
+            ```bash
             curl -fsSL https://raw.githubusercontent.com/i-am-cie/dshgo-config-preset/main/scripts/install.sh | bash
-            \`\`\`
+            ```
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
